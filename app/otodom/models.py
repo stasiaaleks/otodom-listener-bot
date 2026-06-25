@@ -11,19 +11,19 @@ ROOMS: dict[str, int] = {
 }
 
 
-class Money(BaseModel):
+class FinancialDTO(BaseModel):
     value: float | None = None
     currency: str | None = None
 
 
-class Listing(BaseModel):
+class ListingDTO(BaseModel):
     id: int                       # stable key for the seen-set
     title: str
     url: str
     area_m2: float | None = None
     rooms: int | None = None
-    rent: Money | None = None     # base rent
-    total: Money | None = None    # rent + charges
+    rent: FinancialDTO | None = None     # base rent
+    total: FinancialDTO | None = None    # rent + charges
     is_private_owner: bool = False
     location: str | None = None
     image_url: str | None = None

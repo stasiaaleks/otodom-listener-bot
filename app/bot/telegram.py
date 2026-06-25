@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from ..otodom import Listing
+from ..otodom import ListingDTO
 
 # Thin wrapper over the Telegram Bot API (sendMessage / sendPhoto / setWebhook),
 # using httpx for outbound calls. One client per process, reused across polls.
 
 API_BASE = "https://api.telegram.org"
+
 
 
 class TelegramClient:
@@ -22,7 +23,7 @@ class TelegramClient:
         """Send a plain text message to one chat. STUB."""
         raise NotImplementedError
 
-    async def send_listing(self, chat_id: int, listing: Listing) -> None:
+    async def send_listing(self, chat_id: int, listing: ListingDTO) -> None:
         """Send a formatted listing to one chat.
 
         STUB: will format `listing` and call sendPhoto when image_url is
@@ -35,9 +36,9 @@ class TelegramClient:
         raise NotImplementedError
 
 
-def format_listing(listing: Listing) -> str:
-    """Render a listing as a Telegram (HTML/Markdown) message body.
+    def format_listing(self, listing: ListingDTO) -> str:
+        """Render a listing as a Telegram (HTML/Markdown) message body.
 
-    STUB: returns a placeholder until the message template is finalized.
-    """
-    return f"{listing.title}\n{listing.url}"
+        STUB: returns a placeholder until the message template is finalized.
+        """
+        return f"{listing.title}\n{listing.url}"

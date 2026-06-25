@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if [[ ! -f .env ]]; then
-  echo "Missing .env -- copy .env.sample to .env and fill it in first." >&2
+  echo "Missing .env" >&2
   exit 1
 fi
 

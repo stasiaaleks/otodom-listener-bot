@@ -35,8 +35,14 @@ class TelegramClient:
             raise RuntimeError(f"setWebhook failed: {body.get('description', body)}")
 
     async def send_message(self, chat_id: int, text: str) -> None:
-        """Send a plain text message to one chat. STUB."""
-        raise NotImplementedError
+        """Send a plain text message to one chat (Telegram sendMessage)."""
+        resp = await self._client.post(
+            f"{self._base}/sendMessage", json={"chat_id": chat_id, "text": text}
+        )
+        resp.raise_for_status()
+        body = resp.json()
+        if not body.get("ok"):
+            raise RuntimeError(f"sendMessage failed: {body.get('description', body)}")
 
     async def send_listing(self, chat_id: int, listing: ListingDTO) -> None:
         """Send a formatted listing to one chat.

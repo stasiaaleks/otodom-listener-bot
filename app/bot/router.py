@@ -33,7 +33,8 @@ class StartCommand(ICommand):
     keyword = "/start"
 
     async def execute(self, cmd: CommandContext) -> None:
-        await cmd.store.add_subscriber(cmd.chat_id)
+        # TODO: persist the subscriber once storage.Store is implemented:
+        #   await cmd.store.add_subscriber(cmd.chat_id)
         await cmd.telegram.send_message(cmd.chat_id, WELCOME)
 
 

@@ -1,0 +1,62 @@
+[project]
+name = "otodom-telegram-bot"
+version = "0.1.0"
+description = "Telegram bot that posts new Otodom rental listings as they appear."
+requires-python = ">=3.11"
+
+dependencies = [
+    # --- Web app / supporting HTTP layer ---
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+
+    # --- Fetching Otodom ---
+    # Primary client: impersonates a real Chrome TLS/HTTP2 fingerprint,
+    # which header-only clients cannot do (needed to get past DataDome).
+    "curl_cffi>=0.7",
+    # Used for outbound Telegram Bot API calls (and as a general async client).
+    "httpx>=0.27",
+
+    # --- Parsing the embedded __NEXT_DATA__ JSON ---
+    "beautifulsoup4>=4.12",
+
+    # --- Scheduling the polling loop ---
+    # Pin to 3.x: the 4.x line is a different, still-stabilizing API.
+    "apscheduler>=3.10,<4",
+
+    # --- Persistence (seen-set, later: subscribers) ---
+    "asyncpg>=0.29",
+
+    # --- Config from environment ---
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+]
+
+[project.optional-dependencies]
+# Fallback fetcher. Install only if the recon shows plain HTTP is blocked:
+#   pip install -e ".[browser]" && playwright install chromium
+browser = [
+    "playwright>=1.45",
+]
+
+# Tooling for local development.
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# Expects the application package at ./app (per the planned module layout).
+# Rename if you use a different package directory.
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

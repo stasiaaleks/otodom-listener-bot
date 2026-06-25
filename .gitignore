@@ -1,0 +1,24 @@
+# --- Secrets / local config ---
+.env
+
+# --- Local runtime data (Postgres volume is managed by Docker) ---
+data/
+*.db
+
+# --- recon.py output dumps (regenerate on the VM; not app source) ---
+local_dumps/
+sample_listing.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# --- Tooling caches ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

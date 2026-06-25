@@ -1,6 +1,7 @@
 server {
     listen 80;
-    server_name bot.example.com;  # TODO: set your domain
+    listen [::]:80;
+    server_name otodom-bot.duckdns.org;
 
     location / {
         proxy_pass http://127.0.0.1:8000;

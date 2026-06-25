@@ -5,6 +5,9 @@ from ..config import settings
 
 router = APIRouter()
 
+# Path Telegram delivers updates to, also used to build the setWebhook URL.
+WEBHOOK_PATH = "/telegram/webhook"
+
 
 @router.get("/health")
 async def health() -> dict:
@@ -21,7 +24,7 @@ async def status(request: Request) -> dict:
     }
 
 
-@router.post("/telegram/webhook")
+@router.post(WEBHOOK_PATH)
 async def telegram_webhook(request: Request) -> dict:
     """Inbound Telegram updates (subscribers' /start, /stop, ...)."""
     if settings.webhook_secret is not None:

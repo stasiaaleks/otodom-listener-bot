@@ -6,14 +6,12 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    # Telegram
     bot_token: str
     # Optional secret token Telegram echoes back in the
-    # X-Telegram-Bot-Api-Secret-Token header on every webhook call, so we can
-    # reject forged requests. Leave unset to skip the check.
+    # X-Telegram-Bot-Api-Secret-Token header on every webhook call
     webhook_secret: str | None = None
+    public_url: str | None = None
 
-    # Source + polling
     search_url: str  # TODO: base url + configurable params
     poll_interval_seconds: int = 180
 

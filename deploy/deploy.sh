@@ -12,8 +12,6 @@ cd "$APP_DIR"
 
 log() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 
-[[ $EUID -eq 0 ]] || { echo "Run as root (sudo $0 ...)"; exit 1; }
-
 install_prereqs() {
   log "Installing prerequisites (git, curl, docker + compose plugin)"
   apt-get update
@@ -42,39 +40,61 @@ migrate() {
   echo "  (no migration tool configured; schema is created on app startup)"
 }
 
-[[ "${1:-}" == "--install" ]] && install_prereqs
+check_preconditions() {
+  [[ -f .env ]] || { echo "Missing $APP_DIR/.env"; exit 1; }
+}
 
-[[ -f .env ]] || { echo "Missing $APP_DIR/.env"; exit 1; }
+update_code() {
+  log "Pulling latest code ($BRANCH)"
+  git fetch --prune origin
+  git checkout "$BRANCH"
+  git pull --ff-only origin "$BRANCH"
+}
 
-log "Pulling latest code ($BRANCH)"
-git fetch --prune origin
-git checkout "$BRANCH"
-git pull --ff-only origin "$BRANCH"
+build_images() {
+  log "Building images"
+  docker compose build
+}
 
-log "Building images"
-docker compose build
+restart_containers() {
+  log "Restarting containers"
+  docker compose up -d --remove-orphans
+}
 
-migrate
-
-log "Restarting containers"
-docker compose up -d --remove-orphans
-
-if systemctl is-active --quiet nginx; then
-  log "Reloading nginx"
-  nginx -t && systemctl reload nginx
-else
-  log "nginx not running — skipping (run deploy/setup-tls.sh for first-time TLS)"
-fi
-
-log "Waiting for app health at $HEALTH_URL"
-for _ in $(seq 1 30); do
-  if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
-    log "Deployed and healthy."
-    exit 0
+reload_nginx() {
+  if systemctl is-active --quiet nginx; then
+    log "Reloading nginx"
+    nginx -t && systemctl reload nginx
+  else
+    log "nginx not running — skipping (run deploy/setup-tls.sh for first-time TLS)"
   fi
-  sleep 2
-done
+}
 
-echo "Health check failed after timeout — recent app logs:" >&2
-docker compose logs --tail=50 app >&2
-exit 1
+health_gate() {
+  log "Waiting for app health at $HEALTH_URL"
+  for _ in $(seq 1 30); do
+    if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+      log "Deployed and healthy."
+      exit 0
+    fi
+    sleep 2
+  done
+
+  echo "Health check failed after timeout — recent app logs:" >&2
+  docker compose logs --tail=50 app >&2
+  exit 1
+}
+
+main() {
+  [[ $EUID -eq 0 ]] || { echo "Run as root (sudo $0 ...)"; exit 1; }
+  [[ "${1:-}" == "--install" ]] && install_prereqs
+  check_preconditions
+  update_code
+  build_images
+  migrate
+  restart_containers
+  reload_nginx
+  health_gate
+}
+
+main "$@"

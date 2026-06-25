@@ -1,4 +1,4 @@
-from __future__ import annotations
+import httpx
 
 from ..otodom import ListingDTO
 
@@ -8,16 +8,31 @@ from ..otodom import ListingDTO
 API_BASE = "https://api.telegram.org"
 
 
-
 class TelegramClient:
     """Sends messages/listings to individual subscriber chats."""
 
     def __init__(self, bot_token: str) -> None:
-        self._bot_token = bot_token
+        self._base = f"{API_BASE}/bot{bot_token}"
+        self._client = httpx.AsyncClient(timeout=30)
 
     async def close(self) -> None:
-        """Close the underlying httpx client. STUB."""
-        raise NotImplementedError
+        """Close the underlying httpx client."""
+        await self._client.aclose()
+
+    async def set_webhook(self, url: str, secret: str | None = None) -> None:
+        """Register `url` as this bot's webhook (Telegram setWebhook).
+
+        Limits delivery to the message updates the router handles, and passes
+        the secret token Telegram will echo back for verification.
+        """
+        payload: dict = {"url": url, "allowed_updates": ["message", "edited_message"]}
+        if secret:
+            payload["secret_token"] = secret
+        resp = await self._client.post(f"{self._base}/setWebhook", json=payload)
+        resp.raise_for_status()
+        body = resp.json()
+        if not body.get("ok"):
+            raise RuntimeError(f"setWebhook failed: {body.get('description', body)}")
 
     async def send_message(self, chat_id: int, text: str) -> None:
         """Send a plain text message to one chat. STUB."""
@@ -30,11 +45,6 @@ class TelegramClient:
         present, else sendMessage.
         """
         raise NotImplementedError
-
-    async def set_webhook(self, url: str, secret: str | None = None) -> None:
-        """Register the webhook URL with Telegram (setWebhook). STUB."""
-        raise NotImplementedError
-
 
     def format_listing(self, listing: ListingDTO) -> str:
         """Render a listing as a Telegram (HTML/Markdown) message body.

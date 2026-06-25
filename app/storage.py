@@ -1,9 +1,4 @@
-from __future__ import annotations
 
-# Persistence backed by Postgres via an asyncpg connection pool. Two concerns:
-#   - subscribers: chat ids of users who /start-ed the bot and want updates.
-#   - seen: listing ids already sent, so a restart or overlapping poll never
-#     double-posts.
 
 
 class Store:
@@ -26,7 +21,6 @@ class Store:
         """Close the connection pool. STUB."""
         raise NotImplementedError
 
-    # --- subscribers ---------------------------------------------------------
 
     async def add_subscriber(self, chat_id: int) -> None:
         """Record a chat as subscribed (idempotent). STUB."""
@@ -44,7 +38,6 @@ class Store:
         """Number of active subscribers. STUB."""
         raise NotImplementedError
 
-    # --- seen-set ------------------------------------------------------------
 
     async def filter_new(self, ids: list[int]) -> list[int]:
         """Return the subset of listing ids not yet recorded. STUB."""

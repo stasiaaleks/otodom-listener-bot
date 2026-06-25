@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .bot import TelegramClient
 from .config import settings
-from .otodom import fetch_search_html, parse_next_data
+from .otodom import HTMLPageProvider, ListingParser
 from .storage import Store
 
 log = logging.getLogger(__name__)
@@ -23,8 +21,8 @@ async def poll_once(store: Store, telegram: TelegramClient) -> None:
     return
 
     # --- target shape of a cycle (enable once the stubs above are filled) ---
-    html = await fetch_search_html(settings.search_url)
-    listings = parse_next_data(html)
+    html = await HTMLPageProvider().fetch_search_html(settings.search_url)
+    listings = ListingParser().parse_next_data(html)
     new_ids = await store.filter_new([listing.id for listing in listings])
     if not new_ids:
         return
@@ -45,7 +43,7 @@ def create_scheduler(store: Store, telegram: TelegramClient) -> AsyncIOScheduler
         seconds=settings.poll_interval_seconds,
         args=[store, telegram],
         id="otodom-poll",
-        max_instances=1,          # never overlap two polls
-        coalesce=True,            # collapse missed runs into one
+        max_instances=1,  # never overlap two polls
+        coalesce=True,  # collapse missed runs into one
     )
     return scheduler

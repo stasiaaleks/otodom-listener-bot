@@ -27,7 +27,8 @@ async def status(request: Request) -> dict:
 @router.post(WEBHOOK_PATH)
 async def telegram_webhook(request: Request) -> dict:
     """Inbound Telegram updates (subscribers' /start, /stop, ...)."""
-    if settings.webhook_secret is not None:
+
+    if settings.webhook_secret:
         sent = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         if sent != settings.webhook_secret:
             raise HTTPException(status_code=403, detail="bad webhook secret")

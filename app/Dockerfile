@@ -6,6 +6,7 @@ WORKDIR /app
 
 COPY pyproject.toml ./
 COPY app ./app
+COPY migrations ./migrations
 RUN pip install .
 
 EXPOSE 8000

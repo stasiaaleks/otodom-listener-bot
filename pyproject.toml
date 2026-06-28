@@ -23,8 +23,10 @@ dependencies = [
     # Pin to 3.x: the 4.x line is a different, still-stabilizing API.
     "apscheduler>=3.10,<4",
 
-    # --- Persistence (seen-set, later: subscribers) ---
+    # --- Persistence (subscribers + seen-set) ---
     "asyncpg>=0.29",
+    # Keeps SQL in .sql files, bound to asyncpg.
+    "aiosql>=15,<16",
 
     # --- Config from environment ---
     "pydantic>=2.7",

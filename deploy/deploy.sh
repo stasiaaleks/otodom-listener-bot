@@ -36,8 +36,10 @@ migrate() {
   log "Applying database migrations"
   docker compose up -d db
   wait_for_db
-  # No standalone migration tool yet
-  echo "  (no migration tool configured; schema is created on app startup)"
+  # Explicit, fail-loud gate: a bad migration aborts the deploy here (set -e)
+  # instead of crash-looping the app container. Versioned SQL under ./migrations,
+  # tracked in schema_migrations; a no-op when already current.
+  docker compose run --rm app python -m app.migrate
 }
 
 check_preconditions() {

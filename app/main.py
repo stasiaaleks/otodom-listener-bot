@@ -20,11 +20,12 @@ async def lifespan(app: FastAPI):
     store = Store(settings.database_url)
     telegram = TelegramClient(settings.bot_token)
     await store.init()
+    await store.migrate()
 
     if settings.public_url:
         webhook_url = settings.public_url.rstrip("/") + WEBHOOK_PATH
         await telegram.set_webhook(webhook_url, settings.webhook_secret)
-        log.info("registered Telegram webhook: %s", webhook_url)
+        log.info(f"registered Telegram webhook: {webhook_url}")
     else:
         log.warning("PUBLIC_URL not set — skipping Telegram webhook registration")
 

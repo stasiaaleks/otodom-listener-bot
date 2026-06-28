@@ -19,6 +19,6 @@ async def handle_update(update: dict, store: Store, telegram: TelegramClient) ->
     try:
         parsed = TelegramUpdate.model_validate(update)
     except ValidationError:
-        log.error("ignoring malformed Telegram update: %r", update)
+        log.error(f"ignoring malformed Telegram update: {update!r}")
         return
     await default_router.handle_update(parsed, store, telegram)

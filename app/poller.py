@@ -26,7 +26,7 @@ async def poll_once(store: Store, telegram: TelegramClient) -> None:
     ids = [listing.id for listing in listings]
     new_ids = await store.filter_new(ids)
     if not new_ids:
-        log.info("poll_once: %d listings, none new", len(ids))
+        log.info(f"poll_once: {len(ids)} listings, none new")
         return
 
     # Cold start: an empty seen-set means we've never polled. Seed it silently
@@ -34,12 +34,12 @@ async def poll_once(store: Store, telegram: TelegramClient) -> None:
     # instead of a flood of every currently-listed apartment.
     if await store.count_seen() == 0:
         await store.mark_seen(ids)
-        log.info("poll_once: seeded seen-set with %d listings (no broadcast)", len(ids))
+        log.info(f"poll_once: seeded seen-set with {len(ids)} listings (no broadcast)")
         return
 
     by_id = {listing.id: listing for listing in listings}
     subscribers = await store.list_subscribers()
-    log.info("poll_once: broadcasting %d new listings to %d subscribers", len(new_ids), len(subscribers))
+    log.info(f"poll_once: broadcasting {len(new_ids)} new listings to {len(subscribers)} subscribers")
     for listing_id in new_ids:
         for chat_id in subscribers:
             try:
@@ -47,7 +47,7 @@ async def poll_once(store: Store, telegram: TelegramClient) -> None:
             except Exception:
                 # An individual failed send (blocked bot, deleted chat) must not
                 # abort the cycle or prevent marking the rest as seen.
-                log.exception("poll_once: send_listing failed chat=%s listing=%s", chat_id, listing_id)
+                log.exception(f"poll_once: send_listing failed chat={chat_id} listing={listing_id}")
 
     await store.mark_seen(new_ids)
 

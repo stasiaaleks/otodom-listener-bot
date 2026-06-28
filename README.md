@@ -45,8 +45,10 @@ uvicorn app.main:app --reload
 curl -s http://127.0.0.1:8000/health
 ```
 
-The webhook needs a public HTTPS URL (front with nginx — see `deploy/`), then
-register it once: `setWebhook` to `https://<host>/telegram/webhook`.
+For inbound commands, expose a public HTTPS URL (front with nginx — see
+`deploy/`) and set `PUBLIC_URL`. On startup the app registers the webhook with
+Telegram automatically (`PUBLIC_URL` + `/telegram/webhook`). Left unset, the app
+runs without inbound webhook (warns and skips registration).
 
 ## Docker
 
@@ -54,6 +56,28 @@ register it once: `setWebhook` to `https://<host>/telegram/webhook`.
 cp .env.sample .env        # fill in secrets
 docker compose up -d --build
 ```
+
+## Deploy (VM)
+
+The bot is deployed at `/opt/otodom-bot` behind nginx, reachable at
+`https://otodom-bot.duckdns.org` (DuckDNS A record → the VM).
+
+```bash
+# first run: install prerequisites, build, and start everything
+sudo /opt/otodom-bot/deploy/deploy.sh --install
+# one-time TLS: issue a Let's Encrypt cert and add the TLS vhost via certbot
+sudo /opt/otodom-bot/deploy/setup-tls.sh you@example.com
+# set PUBLIC_URL=https://otodom-bot.duckdns.org in .env, then redeploy:
+sudo /opt/otodom-bot/deploy/deploy.sh
+```
+
+`deploy.sh` is idempotent: `git pull` → build → migrate → restart containers →
+reload nginx → health-gate on `/health`. Pass `--install` on the first run to
+install git/docker. `setup-tls.sh` installs the HTTP reverse-proxy vhost
+(`deploy/nginx.conf.sample`, proxying to `127.0.0.1:8000`) and runs
+`certbot --nginx`, which obtains the cert and adds the TLS block + HTTP→HTTPS
+redirect; renewals run via certbot's timer. Requires inbound 80 and 443 open on
+the VM.
 
 ## Recon
 
@@ -67,11 +91,11 @@ python recon.py
 
 ## Next steps
 
-1. Implement `fetcher.fetch_search_html` (curl_cffi, status/challenge checks).
-2. Verify nested field names in `parser.py` against `sample_listing.json`.
+1. Implement `HTMLPageProvider.fetch_search_html` (curl_cffi, status/challenge checks).
+2. Verify nested field names in `ListingParser` against `sample_listing.json`.
 3. Implement `storage.Store` (asyncpg: subscribers + seen) and call
    `init()` / `close()` in lifespan.
-4. Implement `telegram.TelegramClient` (`send_message`, `send_listing`,
-   `set_webhook`) + `format_listing`.
+4. Implement the remaining `TelegramClient` stubs (`send_message`,
+   `send_listing`, `format_listing`). _(`set_webhook` / `close` are done.)_
 5. Remove the early `return` in `poller.poll_once`.
 ```

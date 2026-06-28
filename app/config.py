@@ -1,5 +1,6 @@
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Otodom encodes room counts as enum tokens, e.g. roomsNumber=[ONE,TWO].
@@ -28,6 +29,16 @@ class Settings(BaseSettings):
 
     # Overridden in docker-compose to reach the `db` service by name.
     database_url: str
+
+    @field_validator(
+        "price_min", "price_max", "area_min", "area_max", "rooms", "distance_radius",
+        mode="before",
+    )
+    @classmethod
+    def _blank_to_none(cls, v):
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
 
     def build_search_url(self) -> str:
         # TODO: refactor cleaner 

@@ -2,13 +2,36 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
 
+from ..config import settings
 from ..storage import Store
 from .schemas import TelegramUpdate
 from .telegram import TelegramClient
 
 WELCOME = "You're subscribed — I'll send new Otodom listings as they appear. Send /stop to unsubscribe."
 GOODBYE = "You're unsubscribed. Send /start any time to resume."
-HELP = "Send /start to subscribe to new listings, or /stop to unsubscribe."
+
+
+def _format_interval(seconds: int) -> str:
+    # 180 -> "3 minutes", 90 -> "90 seconds"
+    if seconds >= 60 and seconds % 60 == 0:
+        minutes = seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''}"
+    return f"{seconds} seconds"
+
+
+def help_text() -> str:
+    return (
+        "🏠 <b>Otodom Listings Bot</b>\n"
+        "I watch an Otodom search and forward new listings here as soon as "
+        f"they're posted (checked every {_format_interval(settings.poll_interval_seconds)}).\n\n"
+        "<b>Commands</b>\n"
+        "/start — subscribe to new listings\n"
+        "/stop — stop receiving listings\n"
+        "/help — show this message\n\n"
+        "Each listing shows its price, size, room count, location and a direct "
+        "link. You'll only receive listings posted <i>after</i> you subscribe — "
+        "no backlog flood on /start."
+    )
 
 
 @dataclass(slots=True)
@@ -51,7 +74,7 @@ class HelpCommand(ICommand):
     keyword = "/help"
 
     async def execute(self, cmd: CommandContext) -> None:
-        await cmd.telegram.send_message(cmd.chat_id, HELP)
+        await cmd.telegram.send_message(cmd.chat_id, help_text(), parse_mode="HTML")
 
 
 class CommandRouter:
@@ -80,8 +103,3 @@ class CommandRouter:
             chat_id=message.chat.id, args=args.strip(), store=store, telegram=telegram
         )
         await self.resolve(keyword).execute(cmd)
-
-
-# Default wiring used by the webhook. HelpCommand doubles as the fallback.
-_help = HelpCommand()
-default_router = CommandRouter(commands=[StartCommand(), StopCommand(), _help], fallback=_help)

@@ -37,5 +37,10 @@ async def telegram_webhook(request: Request) -> dict:
             raise HTTPException(status_code=403, detail="bad webhook secret")
 
     update = await request.json()
-    await handle_update(update, request.app.state.store, request.app.state.telegram)
+    await handle_update(
+        update,
+        request.app.state.router,
+        request.app.state.store,
+        request.app.state.telegram,
+    )
     return {"ok": True}

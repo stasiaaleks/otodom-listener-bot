@@ -8,12 +8,6 @@ class FetchError(RuntimeError):
 
 
 class HTMLPageProvider:
-    """Abstracts the retrieval of a search-results HTML page.
-
-    The default implementation uses curl_cffi to impersonate a real Chrome
-    fingerprint to get past DataDome.
-    """
-    
     HEADERS = {
         "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
     }

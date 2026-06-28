@@ -5,10 +5,8 @@ from fastapi import FastAPI
 
 from .api import router
 from .api.routes import WEBHOOK_PATH
-from .bot import TelegramClient
 from .config import settings
-from .poller import create_scheduler
-from .storage import Store
+from .ioc_container import Container
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -16,32 +14,24 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: build long-lived clients and start the poll loop.
-    store = Store(settings.database_url)
-    telegram = TelegramClient(settings.bot_token)
-    await store.init()
-    await store.migrate()
+    container = Container()
+    await container.startup()
 
     if settings.public_url:
         webhook_url = settings.public_url.rstrip("/") + WEBHOOK_PATH
-        await telegram.set_webhook(webhook_url, settings.webhook_secret)
+        await container.telegram.set_webhook(webhook_url, settings.webhook_secret)
         log.info(f"registered Telegram webhook: {webhook_url}")
     else:
         log.warning("PUBLIC_URL not set — skipping Telegram webhook registration")
 
-    scheduler = create_scheduler(store, telegram)
-    scheduler.start()
-
-    app.state.store = store
-    app.state.telegram = telegram
-    app.state.scheduler = scheduler
+    app.state.store = container.store
+    app.state.telegram = container.telegram
+    app.state.scheduler = container.scheduler
+    app.state.poller = container.poller
 
     yield
 
-    # Shutdown: stop the loop and release clients.
-    scheduler.shutdown(wait=False)
-    await telegram.close()
-    await store.close()
+    await container.shutdown()
 
 
 app = FastAPI(title="Otodom Telegram Bot", lifespan=lifespan)

@@ -16,12 +16,14 @@ async def health() -> dict:
 
 @router.get("/status")
 async def status(request: Request) -> dict:
-    # TODO: extend later: last poll time.
     scheduler = getattr(request.app.state, "scheduler", None)
     store = getattr(request.app.state, "store", None)
+    poller = getattr(request.app.state, "poller", None)
+    last_poll_at = poller.last_poll_at if poller else None
     return {
         "status": "running",
         "scheduler_running": bool(scheduler and scheduler.running),
+        "last_poll_at": last_poll_at.isoformat() if last_poll_at else None,
         "subscribers": await store.count_subscribers() if store else None,
         "seen": await store.count_seen() if store else None,
     }
@@ -29,8 +31,6 @@ async def status(request: Request) -> dict:
 
 @router.post(WEBHOOK_PATH)
 async def telegram_webhook(request: Request) -> dict:
-    """Inbound Telegram updates (subscribers' /start, /stop, ...)."""
-
     if settings.webhook_secret:
         sent = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         if sent != settings.webhook_secret:

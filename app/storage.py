@@ -33,7 +33,7 @@ class Store:
         await queries.remove_subscriber(self._db, chat_id=chat_id)
 
     async def list_subscribers(self) -> list[int]:
-        # aiosql's asyncpg multi-row select is an async generator.
+        # aiosql's asyncpg multi-row select is an async generator
         return [row["chat_id"] async for row in queries.list_subscribers(self._db)]
 
     async def count_subscribers(self) -> int:

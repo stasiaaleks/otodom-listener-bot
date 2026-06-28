@@ -33,8 +33,7 @@ class StartCommand(ICommand):
     keyword = "/start"
 
     async def execute(self, cmd: CommandContext) -> None:
-        # TODO: persist the subscriber once storage.Store is implemented:
-        #   await cmd.store.add_subscriber(cmd.chat_id)
+        await cmd.store.add_subscriber(cmd.chat_id)
         await cmd.telegram.send_message(cmd.chat_id, WELCOME)
 
 
@@ -83,7 +82,6 @@ class CommandRouter:
         await self.resolve(keyword).execute(cmd)
 
 
-# TODO: move to container 
 # Default wiring used by the webhook. HelpCommand doubles as the fallback.
 _help = HelpCommand()
 default_router = CommandRouter(commands=[StartCommand(), StopCommand(), _help], fallback=_help)

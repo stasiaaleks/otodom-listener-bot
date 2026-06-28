@@ -16,11 +16,14 @@ async def health() -> dict:
 
 @router.get("/status")
 async def status(request: Request) -> dict:
-    # TODO: extend later: last poll time, seen-listing count, subscriber count.
+    # TODO: extend later: last poll time.
     scheduler = getattr(request.app.state, "scheduler", None)
+    store = getattr(request.app.state, "store", None)
     return {
         "status": "running",
         "scheduler_running": bool(scheduler and scheduler.running),
+        "subscribers": await store.count_subscribers() if store else None,
+        "seen": await store.count_seen() if store else None,
     }
 
 

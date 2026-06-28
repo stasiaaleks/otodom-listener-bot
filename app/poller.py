@@ -13,24 +13,42 @@ log = logging.getLogger(__name__)
 async def poll_once(store: Store, telegram: TelegramClient) -> None:
     """Run one poll cycle: fetch -> parse -> filter new -> broadcast -> mark seen.
 
-    STUB: wiring is sketched below but left inert so the running app does not
-    raise on every scheduled tick. Drop the early return once the pieces below
-    are implemented.
+    Any failure (fetch block/challenge, parse error, etc.) is logged rather than
+    raised, so a single bad tick never tears down the scheduled job.
     """
-    log.info("poll_once: not implemented yet (no-op tick)")
-    return
-
-    # --- target shape of a cycle (enable once the stubs above are filled) ---
-    html = await HTMLPageProvider().fetch_search_html(settings.search_url)
-    listings = ListingParser().parse_next_data(html)
-    new_ids = await store.filter_new([listing.id for listing in listings])
-    if not new_ids:
+    try:
+        html = await HTMLPageProvider().fetch_search_html(settings.search_url)
+        listings = ListingParser().parse_next_data(html)
+    except Exception:
+        log.exception("poll_once: fetch/parse failed")
         return
+
+    ids = [listing.id for listing in listings]
+    new_ids = await store.filter_new(ids)
+    if not new_ids:
+        log.info("poll_once: %d listings, none new", len(ids))
+        return
+
+    # Cold start: an empty seen-set means we've never polled. Seed it silently
+    # so subscribers only receive listings that appear *after* they subscribe,
+    # instead of a flood of every currently-listed apartment.
+    if await store.count_seen() == 0:
+        await store.mark_seen(ids)
+        log.info("poll_once: seeded seen-set with %d listings (no broadcast)", len(ids))
+        return
+
     by_id = {listing.id: listing for listing in listings}
     subscribers = await store.list_subscribers()
-    for chat_id in subscribers:
-        for listing_id in new_ids:
-            await telegram.send_listing(chat_id, by_id[listing_id])
+    log.info("poll_once: broadcasting %d new listings to %d subscribers", len(new_ids), len(subscribers))
+    for listing_id in new_ids:
+        for chat_id in subscribers:
+            try:
+                await telegram.send_listing(chat_id, by_id[listing_id])
+            except Exception:
+                # An individual failed send (blocked bot, deleted chat) must not
+                # abort the cycle or prevent marking the rest as seen.
+                log.exception("poll_once: send_listing failed chat=%s listing=%s", chat_id, listing_id)
+
     await store.mark_seen(new_ids)
 
 

@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     # Startup: build long-lived clients and start the poll loop.
     store = Store(settings.database_url)
     telegram = TelegramClient(settings.bot_token)
-    # TODO: await store.init() once storage is implemented.
+    await store.init()
 
     if settings.public_url:
         webhook_url = settings.public_url.rstrip("/") + WEBHOOK_PATH
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     # Shutdown: stop the loop and release clients.
     scheduler.shutdown(wait=False)
     await telegram.close()
-    # TODO: await store.close() once storage is implemented.
+    await store.close()
 
 
 app = FastAPI(title="Otodom Telegram Bot", lifespan=lifespan)

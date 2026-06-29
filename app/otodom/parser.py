@@ -46,8 +46,11 @@ class ListingParser:
 
 
     def _url(self, it: dict) -> str:
-        href = it.get("href") or f"[lang]/oferta/{it.get('slug', '')}"
-        return BASE + href.replace("[lang]", "pl").lstrip("/")
+        slug = it.get("slug")
+        if slug:
+            return f"{BASE}pl/oferta/{slug}"
+        href = (it.get("href") or "").replace("[lang]", "pl").replace("/ad/", "/oferta/")
+        return BASE + href.lstrip("/")
 
     def _rooms(self, it: dict) -> int | None:
         rooms_number = it.get("roomsNumber")
